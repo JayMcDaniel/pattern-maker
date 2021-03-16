@@ -18,42 +18,116 @@
 <style>
     body {
         padding: 10px;
+        padding-bottom: 60px;
     }
 
-    table#pattern {
+    h1 {
+        color: rgb(255, 55, 48);
+        font-size: 3em;
+    }
+
+    h2 {
+        color: rgb(255, 55, 48);
+        font-size: 2em;
+    }
+
+    #main_container {
+        min-height: 1000px;
+        height: fit-content;
+    }
+
+
+    table#sheet,
+    table.template_table {
         width: fit-content;
         height: fit-content;
         border-spacing: 0px !important;
+
     }
 
-    table#pattern tbody td {
-        width: 15px;
-        height: 15px;
+    table#sheet td,
+    table#sheet tbody th,
+    .template_table td {
+        width: 30px;
+        height: 30px;
         margin: 0px;
         padding: none;
-        background-color: #fff;
         cursor: pointer;
         -webkit-print-color-adjust: exact;
 
     }
 
-    table#pattern tbody th {
-        width: 30px;
-        height: 15px;
-    }
 
     .add_row {
         float: left;
+        color: #007bff
     }
 
+    .add_column {
+        color: #007bff;
+    }
 
-    table#pattern a{
+    .remove_row,
+    .remove_column {
+        color: rgb(255, 55, 48);
+    }
+
+    table#sheet a {
         user-select: none;
     }
 
     input {
         width: 80px;
+        height: 40px;
+        margin-right: 10px;
 
+    }
+
+    input[type=color] {
+        top: 10px;
+        position: relative;
+    }
+
+    #patterns_outer_container {
+        border: 2px solid #007bff;
+        float: right;
+        margin-left: 20px;
+        margin-right: 30px;
+        margin-top: 20px;
+        padding: 30px;
+        width: fit-content;
+        background-color: whitesmoke;
+
+    }
+
+
+    #patterns_outer_container .active_pattern {
+        border: 2px solid rgb(255, 55, 48);
+
+    }
+
+    .template_table_outer_div {
+        margin-bottom: 20px;
+
+    }
+
+    #popup_div {
+        height: fit-content;
+        width: fit-content;
+        z-index: 500;
+        background-color: rgba(255, 255, 255, 0.2);
+        position: absolute;
+        display: none;
+    }
+
+    #sheet_outer_container {
+        position: relative;
+        float: left;
+        margin-top: 20px;
+    }
+
+    p {
+        font-size: 1.2em;
     }
 </style>
 
@@ -67,40 +141,129 @@
 
     <script>
         //global
-        let pattern = {};
+        let sheet = {};
+        let patterns = {};
+        let pattern_selected = false;
+        let active_pattern = undefined;
         let current_color = "";
 
+
+
         //patterns
-        class Tree {
+        class Pattern {
+
+            draw() {
+
+                let template_table = "<table class='template_table' data-pattern=" + this.name + "><tbody>";
+
+                this.template.forEach(row => {
+                    let row_html = "<tr>";
+                    row.forEach(cell => {
+                        let color = cell === 1 ? current_color : "none";
+                        row_html += "<td style='background-color:" + color + ";'></td>";
+
+                    });
+                    row_html += "</tr>";
+                    template_table += row_html;
+                });
+
+                template_table += "</tbody></table>";
+
+                $("#patterns_inner_container").append(
+                    `<div class='template_table_outer_div'><h5>${this.name}</h5>
+                    ${template_table}
+                </div>`);
+            }
+
+
+            //bind selection of template
+            bind() {
+                $(".template_table").unbind().click(function () {
+
+                    if ($(this).hasClass("active_pattern")) {
+                        $(this).removeClass("active_pattern");
+                        pattern_selected = false;
+                    } else {
+                        $(".active_pattern").removeClass("active_pattern");
+                        $(this).addClass("active_pattern");
+                        $("#popup_div").html($(this)[0].outerHTML);
+                        pattern_selected = true;
+                        active_pattern = patterns[$(this).attr("data-pattern")];
+                    }
+
+                })
+            }
+
+
+
+        }
+
+
+        //TREE
+
+        class Tree extends Pattern {
 
             constructor() {
+                super();
+                this.name = "Tree"
 
-                this.pattern = [ //dark and light green
-                    [l, l, d, l, l],
-                    [l, d, d, d, l],
-                    [l, l, d, l, l],
-                    [l, d, d, d, l],
-                    [l, l, d, l, l],
-                    [d, d, d, d, d],
-                    [l, l, d, l, l],
-                    [d, d, d, d, d],
-                    [l, l, d, l, l]
+                this.template = [ //1 is filled, 0 is empty
+                    [0, 0, 1, 0, 0],
+                    [0, 1, 1, 1, 0],
+                    [0, 0, 1, 0, 0],
+                    [0, 1, 1, 1, 0],
+                    [0, 0, 1, 0, 0],
+                    [1, 1, 1, 1, 1],
+                    [0, 0, 1, 0, 0],
+                    [1, 1, 1, 1, 1],
+                    [0, 0, 1, 0, 0]
                 ];
             }
 
         }
 
 
-        //blank pattern (a table elem)
-        class Pattern {
+        //SNOWFLAKE
+
+        class Snowflake extends Pattern {
+
+            constructor() {
+                super();
+                this.name = "Snowflake"
+
+                this.template = [ //dark and light green
+                    [0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+                    [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0],
+                    [0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0],
+                    [1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1],
+                    [0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0],
+                    [1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1],
+                    [0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0],
+                    [0, 0, 1, 0, 0, 1, 0, 0, 1, 0, 0],
+                    [0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0],
+                    [0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0]
+
+                ];
+            }
+
+        }
+
+
+
+        //SHEET - main pattern design area - empty table element
+
+        class Sheet {
 
             constructor(o = {}) {
 
                 this.rows = o.rows || Number($("#rows_input").val());
                 this.cols = o.cols || Number($("#columns_input").val());
                 this.grid_color = o.grid_color || $("#grid_color_input").val();
-
+                this.empty_color = o.empty_color || $("#empty_color_input").val();
+                
             }
+
 
             draw() {
 
@@ -113,79 +276,123 @@
                     new Array(this.cols).fill("<td></td>").join("") + "</tr>";
                 let table_body = new Array(this.rows).fill(table_row).join("");
 
-
-                $("#pattern tbody").html(table_col_buttons + table_body);
+                $("#sheet tbody").html(table_col_buttons + table_body);
                 this.bind();
                 this.colorGrid();
-
             }
 
 
+            //show and move pattern popup
+            patternPopup(event) {
+                let offsetX = $("#popup_div table tr:first td").length * 30;
+                let offsetY = $("#popup_div table tr").length * 30;
 
+                $("#popup_div").show().css({
+                    left: (event.layerX - offsetX + 10) + "px",
+                    top: (event.layerY - offsetY - 10) + "px"
+                })
+
+            }
+
+            //stamp a pattern on the sheet
+            stamp(elem) {
+
+                let start_row_index = Math.max(elem.parent().index() - 1 - $("#popup_div table tr").length, -1);
+                let trs = $("#sheet tbody tr:gt(" + start_row_index + ")");
+                let start_col_index = Math.max(elem.index() - 1 - $("#popup_div table tr:first td").length, -1);
+
+
+                trs.each(function (i, tr) {
+                    let tds = start_col_index > -1 ? $("td:gt(" + start_col_index + ")", tr) : $("td", tr);
+                    tds.each(function (j, td) {
+
+                        if (active_pattern.template[i] && active_pattern.template[i][j])
+                            $(this).css("background-color", current_color).attr("data-colored", true);
+                    })
+                });
+            }
+
+
+            //bind hover and mousedown actions on sheet
             bind() {
 
-                $("#pattern tbody td").unbind().mouseenter(function (event) {
-                    event.preventDefault();
+                $("#sheet tbody td").unbind().mouseenter(function (event) {
+                        event.preventDefault();
+
                         if (event.buttons === 1) { //mousedown
-                            $(this).css("background-color", current_color);
+                            $(this).css("background-color", current_color).attr("data-colored", true);
                         }
 
                     })
                     .mousedown(function (event) {
                         event.preventDefault();
-                        $(this).css("background-color", current_color);
+                        if (pattern_selected) {
+                            sheet.stamp($(this));
+                        } else {
+                            $(this).css("background-color", current_color).attr("data-colored", true);
+                        }
                     });
 
 
+                $("#sheet tbody").unbind().mousemove(function () {
+                    //if using pattern
+                    if (pattern_selected) {
+                        sheet.patternPopup(event);
+                    }
+                }).mouseleave(function () {
+                    $("#popup_div").hide();
+                })
+
+
+
                 $(".add_column").unbind().click(function (ev) {
+
                     ev.preventDefault();
                     let add_col_index = $(this).parent().index() - 1;
 
-                    $("#pattern tr").each(function (i, tr) {
-                        if(i===0){
-                            $("th:eq(" + (add_col_index +1) + ")", tr).before("<th><a href='#' class='add_column' title='Add column before'>+</a> <a href='#' class='remove_column' title='Remove column'>&minus;</a></th>");
-                        }else{
+                    $("#sheet tr").each(function (i, tr) {
+                        if (i === 0) {
+                            $("th:eq(" + (add_col_index + 1) + ")", tr).before(
+                                "<th><a href='#' class='add_column' title='Add column before'>+</a> <a href='#' class='remove_column' title='Remove column'>&minus;</a></th>"
+                            );
+                        } else {
                             $("td:eq(" + add_col_index + ")", tr).before("<td></td>");
                         }
                     });
 
-                    pattern.bind();
-                    pattern.colorGrid();
+                    sheet.bind();
+                    sheet.colorGrid();
                 });
 
 
                 $(".add_row").unbind().click(function (ev) {
                     ev.preventDefault();
                     let add_row_index = $(this).parent().parent().index() - 1;
-                    let column_length = $("#pattern tbody tr:last td").length;
+                    let column_length = $("#sheet tbody tr:last td").length;
 
-                    let table_row = "<tr><th><a href='#' class='add_row' title='Add row before'>+</a> <a href='#' class='remove_row' title='Remove row'>&minus;</a></th>" +
-                    new Array(column_length).fill("<td></td>").join("") + "</tr>";
+                    let table_row =
+                        "<tr><th><a href='#' class='add_row' title='Add row before'>+</a> <a href='#' class='remove_row' title='Remove row'>&minus;</a></th>" +
+                        new Array(column_length).fill("<td></td>").join("") + "</tr>";
 
-                    $("#pattern tr:eq(" + add_row_index + ")").after(table_row);
-
-                    pattern.bind();
-                    pattern.colorGrid();
-
+                    $("#sheet tr:eq(" + add_row_index + ")").after(table_row);
+                    sheet.bind();
+                    sheet.colorGrid();
                 });
 
 
-                $(".remove_row").click(function(){
+                $(".remove_row").unbind().click(function () {
                     let remove_row_index = $(this).parent().parent().index();
-                    $("#pattern tr:eq(" + remove_row_index + ")").remove();
+                    $("#sheet tr:eq(" + remove_row_index + ")").remove();
                 });
 
 
-                $(".remove_column").click(function(){
-                    let remove_column_index = $(this).parent().index() -1;
+                $(".remove_column").unbind().click(function () {
+                    let remove_column_index = $(this).parent().index() - 1;
 
-                    $("#pattern tr").each(function (i, tr) {
-                    
+                    $("#sheet tr").each(function (i, tr) {
                         $("td:eq(" + remove_column_index + ")", tr).remove();
                         $("th:eq(" + (remove_column_index + 1) + ")", tr).remove();
-
                     });
-                   
                 });
 
             }
@@ -193,8 +400,17 @@
 
             //color grid lines
             colorGrid() {
-                $("#pattern td").css("border", "1px solid " + this.grid_color);
+                $("#sheet td, .template_table td").css("border", "1px solid " + this.grid_color);
 
+            }
+
+            //color empty cells (background)
+            colorEmptyCells(){
+                $("#sheet td").each(function(){
+                    if (!$(this).attr("data-colored")){
+                        $(this).css("background-color", sheet.empty_color);
+                    }
+                })
             }
 
 
@@ -202,7 +418,7 @@
 
 
 
-        //adding or removing columns function
+        //adding or removing columns function from input
 
         function changeColumns(new_col_cnt, current_col_cnt) {
 
@@ -210,7 +426,7 @@
 
                 let cols_to_add = new_col_cnt - current_col_cnt;
 
-                $("#pattern tr").each(function (tr_index) {
+                $("#sheet tr").each(function (tr_index) {
 
                     for (let i = 0; i < cols_to_add; i++) {
                         if (tr_index === 0) {
@@ -224,40 +440,42 @@
                     }
                 });
             } else { //else removing columns
-                $("#pattern tr").each(function () {
+                $("#sheet tr").each(function () {
                     $("td:gt(" + (new_col_cnt - 1) + ")", $(this)).remove();
                     $("th:gt(" + (new_col_cnt) + ")", $(this)).remove()
                 });
             }
 
-            pattern.bind();
-            pattern.colorGrid();
+            sheet.bind();
+            sheet.colorGrid();
         }
 
-        //adding or removing rows function
+
+
+        //adding or removing rows function from input
 
         function changeRows(new_row_cnt, current_row_cnt) {
 
             if (new_row_cnt > current_row_cnt) {
 
                 let rows_to_add = new_row_cnt - current_row_cnt;
-                let column_length = $("#pattern tbody tr:last td").length;
+                let column_length = $("#sheet tbody tr:last td").length;
 
                 for (let i = 0; i < rows_to_add; i++) {
 
                     let new_table_row =
                         "<tr><th><a href='#' class='add_row' title='Add row before'>+</a> <a href='#' class='remove_row' title='Remove row'>&minus;</a></th>" +
                         new Array(column_length).fill("<td></td>").join("") + "</tr>";
-                    $("#pattern tbody").append(new_table_row);
+                    $("#sheet tbody").append(new_table_row);
                 }
             } else { //else removing columns
 
-                $("#pattern tr:gt(" + (new_row_cnt) + ")").remove();
+                $("#sheet tr:gt(" + (new_row_cnt) + ")").remove();
 
             }
 
-            pattern.bind();
-            pattern.colorGrid();
+            sheet.bind();
+            sheet.colorGrid();
         }
 
 
@@ -271,27 +489,49 @@
 
         $(document).ready(function () {
 
-            pattern = new Pattern();
-            pattern.draw();
+
+            sheet = new Sheet();
+            sheet.draw();
+
+            patterns = {
+                "Tree": new Tree(),
+                "Snowflake": new Snowflake()
+            }
+
+
 
             //change rows/ columns inputs
 
             $("#columns_input").on("keyup change", function () {
-                changeColumns(Number($(this).val()), $("#pattern tr:first th").length - 1);
+                changeColumns(Number($(this).val()), $("#sheet tr:first th").length - 1);
             });
 
             $("#rows_input").on("keyup change", function () {
-                changeRows(Number($(this).val()), $("#pattern tr").length - 1);
+                changeRows(Number($(this).val()), $("#sheet tr").length - 1);
             });
 
             $("#color_input").change(function () {
                 current_color = $(this).val();
+                $("#patterns_inner_container").html("");
+
+                for (pattern in patterns) {
+                    patterns[pattern].draw();
+                    patterns[pattern].bind();
+                }
             }).change();
 
+            $("#empty_color_input").change(function(){
+                sheet.empty_color = $(this).val();
+                sheet.colorEmptyCells();
+            });
+
             $("#grid_color_input").change(function () {
-                pattern.grid_color = $(this).val();
-                pattern.colorGrid();
+                sheet.grid_color = $(this).val();
+                sheet.colorGrid();
+
             }).change();
+
+
 
 
 
@@ -299,18 +539,38 @@
         });
     </script>
 
+
     <h1>Pattern maker</h1>
-    <p>Choose on a color then draw on boxes to change their colors.</p>
+    <p>Choose a color then draw on the boxes to change their colors. </p>
 
-    <label for="columns_input">Columns: </label> <input type="number" id="columns_input" value="20" />
-    <label for="rows_input">Rows: </label> <input type="number" id="rows_input" value="20" />
-    <label for="color_input">Current color: </label> <input type="color" id="color_input" value="#B80000" />
+
+    <label for="columns_input">Columns: </label> <input type="number" id="columns_input" value="30" />
+    <label for="rows_input">Rows: </label> <input type="number" id="rows_input" value="30" />
+    <label for="color_input">Stitch color: </label> <input type="color" id="color_input" value="#B80000" />
     <label for="grid_color_input">Grid color: </label> <input type="color" id="grid_color_input" value="#A3A3A3" />
+    <label for="empty_color_input">Background color: </label> <input type="color" id="empty_color_input" value="#FFFFFF" />
 
-    <table id="pattern">
-        <tbody>
-        </tbody>
-    </table>
+
+    <div id="main_container">
+        <div id="sheet_outer_container">
+
+            <div id="popup_div"></div>
+
+            <table id="sheet">
+                <tbody>
+                </tbody>
+            </table>
+
+        </div>
+
+        <div id="patterns_outer_container">
+            <h2>Patterns:</h2>
+            <p>Click a pattern, then click on the sheet to add
+                the pattern.</p>
+            <div id="patterns_inner_container"></div>
+        </div>
+
+    </div>
 
 </body>
 
