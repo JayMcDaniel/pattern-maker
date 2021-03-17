@@ -50,6 +50,8 @@
     .template_table td {
         width: 30px;
         height: 30px;
+        min-height: 30px;
+        min-width: 30px;
         margin: 0px;
         padding: none;
         cursor: pointer;
@@ -72,7 +74,7 @@
         color: rgb(255, 55, 48);
     }
 
-    table#sheet a {
+    table#sheet th {
         user-select: none;
     }
 
@@ -101,8 +103,8 @@
     }
 
 
-    #patterns_outer_container .active_pattern {
-        border: 2px solid rgb(255, 55, 48);
+    #patterns_inner_container .active_pattern {
+        border: 2px solid rgb(255, 55, 48) !important;
 
     }
 
@@ -261,7 +263,7 @@
                 this.cols = o.cols || Number($("#columns_input").val());
                 this.grid_color = o.grid_color || $("#grid_color_input").val();
                 this.empty_color = o.empty_color || $("#empty_color_input").val();
-                
+
             }
 
 
@@ -301,13 +303,13 @@
                 let trs = $("#sheet tbody tr:gt(" + start_row_index + ")");
                 let start_col_index = Math.max(elem.index() - 1 - $("#popup_div table tr:first td").length, -1);
 
-
                 trs.each(function (i, tr) {
                     let tds = start_col_index > -1 ? $("td:gt(" + start_col_index + ")", tr) : $("td", tr);
                     tds.each(function (j, td) {
 
                         if (active_pattern.template[i] && active_pattern.template[i][j])
-                            $(this).css("background-color", current_color).attr("data-colored", true);
+                            $(this).css("background-color", current_color).attr("data-colored",
+                                true);
                     })
                 });
             }
@@ -360,6 +362,7 @@
                         }
                     });
 
+                    $("#columns_input").val($("#sheet tr:last td").length);
                     sheet.bind();
                     sheet.colorGrid();
                 });
@@ -377,22 +380,40 @@
                     $("#sheet tr:eq(" + add_row_index + ")").after(table_row);
                     sheet.bind();
                     sheet.colorGrid();
+                    $("#rows_input").val($("#sheet tr").length);
+
                 });
 
 
                 $(".remove_row").unbind().click(function () {
                     let remove_row_index = $(this).parent().parent().index();
-                    $("#sheet tr:eq(" + remove_row_index + ")").remove();
+
+
+                    if ($("#sheet tr").length > 2) {
+
+                        $("#sheet tr:eq(" + remove_row_index + ")").remove();
+                        $("#rows_input").val($("#sheet tr").length - 1);
+                    }
+
+
+
                 });
 
 
                 $(".remove_column").unbind().click(function () {
                     let remove_column_index = $(this).parent().index() - 1;
 
-                    $("#sheet tr").each(function (i, tr) {
-                        $("td:eq(" + remove_column_index + ")", tr).remove();
-                        $("th:eq(" + (remove_column_index + 1) + ")", tr).remove();
-                    });
+                    if ($("#sheet tr:last td").length > 1) {
+
+                        $("#sheet tr").each(function (i, tr) {
+
+                            $("td:eq(" + remove_column_index + ")", tr).remove();
+                            $("th:eq(" + (remove_column_index + 1) + ")", tr).remove();
+
+                        });
+
+                        $("#columns_input").val($("#sheet tr:last td").length);
+                    }
                 });
 
             }
@@ -400,14 +421,14 @@
 
             //color grid lines
             colorGrid() {
-                $("#sheet td, .template_table td").css("border", "1px solid " + this.grid_color);
+                $("#sheet td").css("border", "1px solid " + this.grid_color);
 
             }
 
             //color empty cells (background)
-            colorEmptyCells(){
-                $("#sheet td").each(function(){
-                    if (!$(this).attr("data-colored")){
+            colorEmptyCells() {
+                $("#sheet td").each(function () {
+                    if (!$(this).attr("data-colored")) {
                         $(this).css("background-color", sheet.empty_color);
                     }
                 })
@@ -503,11 +524,11 @@
             //change rows/ columns inputs
 
             $("#columns_input").on("keyup change", function () {
-                changeColumns(Number($(this).val()), $("#sheet tr:first th").length - 1);
+                changeColumns(Math.max(Number($(this).val()), 1), $("#sheet tr:first th").length - 1);
             });
 
             $("#rows_input").on("keyup change", function () {
-                changeRows(Number($(this).val()), $("#sheet tr").length - 1);
+                changeRows(Math.max(Number($(this).val()), 1), $("#sheet tr").length - 1);
             });
 
             $("#color_input").change(function () {
@@ -520,7 +541,7 @@
                 }
             }).change();
 
-            $("#empty_color_input").change(function(){
+            $("#empty_color_input").change(function () {
                 sheet.empty_color = $(this).val();
                 sheet.colorEmptyCells();
             });
@@ -548,7 +569,8 @@
     <label for="rows_input">Rows: </label> <input type="number" id="rows_input" value="30" />
     <label for="color_input">Stitch color: </label> <input type="color" id="color_input" value="#B80000" />
     <label for="grid_color_input">Grid color: </label> <input type="color" id="grid_color_input" value="#A3A3A3" />
-    <label for="empty_color_input">Background color: </label> <input type="color" id="empty_color_input" value="#FFFFFF" />
+    <label for="empty_color_input">Background color: </label> <input type="color" id="empty_color_input"
+        value="#FFFFFF" />
 
 
     <div id="main_container">
